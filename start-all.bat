@@ -1,19 +1,18 @@
 @echo off
 chcp 65001 >nul
-echo NAVO RADIO — запуск
+echo NAVO RADIO - Starting...
 echo.
 
-:: Запуск Icecast (конфиг из папки проекта — без ошибок прав доступа)
-echo [1/2] Запуск Icecast...
+echo [1/2] Starting Icecast...
 start "Icecast" /min "C:\Program Files\Icecast\bin\icecast.exe" -c "%~dp0icecast-data\icecast.xml"
 timeout /t 3 /nobreak >nul
 
-:: Запуск бэкенда
-echo [2/2] Запуск бэкенда...
+echo [2/2] Starting Backend...
 cd /d "%~dp0backend"
-start "NAVO Backend" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && python main.py"
+set PYTHONIOENCODING=utf-8
+start "NAVO Backend" python main.py
 
 echo.
-echo Готово. Откройте radio.html и нажмите Play.
-echo Не закрывайте окна Icecast и Backend.
+echo Done. Open radio.html and press Play.
+echo Do not close Icecast and Backend windows.
 pause
