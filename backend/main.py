@@ -24,7 +24,9 @@ def run_block(block_type: BlockType, arg: str | None) -> None:
     elif block_type == BlockType.MUSIC:
         # Непрерывный цикл треков — поток не прерывается между треками
         while get_current_block()[0] == BlockType.MUSIC:
-            run_music_track(intro_enabled=True)
+            if not run_music_track(intro_enabled=True):
+                print("[MUSIC] Не удалось загрузить трек, пауза 30 сек")
+                time.sleep(30)
 
 
 def main() -> None:

@@ -11,7 +11,7 @@ timeout /t 3 /nobreak >nul
 :: Запуск бэкенда
 echo [2/2] Запуск бэкенда...
 cd /d "%~dp0backend"
-start "NAVO Backend" python main.py
+start "NAVO Backend" cmd /c "chcp 65001 >nul && set PYTHONIOENCODING=utf-8 && python main.py"
 
 echo.
 echo Готово. Откройте radio.html и нажмите Play.

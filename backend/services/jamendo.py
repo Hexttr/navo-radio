@@ -11,8 +11,9 @@ import requests
 from config import CACHE_DIR, JAMENDO_CLIENT_ID
 
 API_BASE = "https://api.jamendo.com/v3.0/tracks"
-# Теги для восточной/мировой музыки
-TAGS = ["world", "folk", "ethnic"]
+# Теги: восточная музыка, приоритет — Таджикистан и Центральная Азия
+# tajik — таджикские артисты; oriental — восточная; persian — персидская; asia — азиатская
+TAGS = ["tajik", "oriental", "persian", "asia", "world", "folk", "ethnic"]
 
 
 @dataclass
@@ -66,12 +67,14 @@ def fetch_tracks(limit: int = 50, tag: str | None = None) -> list[Track]:
 
 
 def get_next_track() -> Track | None:
-    """Получить случайный трек из пула восточной музыки."""
-    tag = random.choice(TAGS)
-    tracks = fetch_tracks(limit=20, tag=tag)
-    if not tracks:
-        return None
-    return random.choice(tracks)
+    """Получить случайный трек из пула восточной музыки (приоритет — таджикская, восточная)."""
+    tags_to_try = list(TAGS)
+    random.shuffle(tags_to_try)
+    for tag in tags_to_try:
+        tracks = fetch_tracks(limit=30, tag=tag)
+        if tracks:
+            return random.choice(tracks)
+    return None
 
 
 def download_track(track: Track) -> Path:

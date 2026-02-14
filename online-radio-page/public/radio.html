@@ -505,15 +505,8 @@
 
     const STREAM_URL = "http://localhost:8000/stream";
 
-    /* Demo song list */
-    const songs = [
-      "Shahriyor - Modaram",
-      "Farrux Xamrayev - Yor-Yor",
-      "Manizha - Sabo",
-      "Nigina Amonqulova - Oshiq",
-      "Sadriddin - Majnun",
-      "Talib Tale - Gozlerin"
-    ];
+    /* Прямой эфир — метаданные приходят из стрима (Icecast не передаёт, пока статично) */
+    const defaultNowPlaying = "NAVO RADIO — Прямой эфир";
 
     /* ─── DOM Elements ─── */
     const titleEl = document.getElementById("radioTitle");
@@ -831,17 +824,11 @@
     });
 
     /* ─── Init ─── */
-    setSong(songs[0]);
+    setSong(defaultNowPlaying);
     updateUI();
     updateVolumeSliderBg();
     updateVolumeIcon();
     drawIdleEqualizer();
-
-    /* Rotate songs every 30s (simulate metadata) */
-    setInterval(function () {
-      const idx = Math.floor(Math.random() * songs.length);
-      setSong(songs[idx]);
-    }, 30000);
   </script>
 </body>
 </html>
