@@ -1,0 +1,32 @@
+# Чувствительные данные
+.env
+*.env
+!*.env.example
+backend/.env
+
+# Кэш и временные файлы
+cache/
+
+# Подкасты (пользовательский контент)
+podcasts/*.mp3
+podcasts/*.mp4
+*.pyc
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+node_modules/
+
+# Icecast (логи и конфиг с паролем)
+icecast-data/log/
+icecast-data/icecast.xml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

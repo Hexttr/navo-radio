@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f1724" />
+  <title>NAVO RADIO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #0f1724;
+      --bg-card: #141e2e;
+      --primary: hsl(270, 70%, 60%);
+      --primary-dim: hsl(270, 50%, 25%);
+      --primary-glow: hsl(270, 80%, 58%);
+      --primary-light: hsl(280, 90%, 72%);
+      --text: hsl(240, 20%, 92%);
+      --text-muted: hsl(222, 15%, 55%);
+      --border: hsl(222, 30%, 18%);
+      --emerald: #34d399;
+      --amber: #fbbf24;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    ::selection {
+      background: hsl(270, 70%, 60% / 0.3);
+    }
+
+    /* ─── Main Container ─── */
+    .radio-main {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      width: 100%;
+      padding: 2rem 1rem;
+    }
+
+    /* ─── Ambient Glow ─── */
+    .ambient-glow {
+      pointer-events: none;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, hsl(270 70% 60% / 0.08) 0%, transparent 70%);
+      filter: blur(60px);
+    }
+
+    /* ─── Language Selector ─── */
+    .lang-selector {
+      position: absolute;
+      right: 1.5rem;
+      top: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: hsl(225, 40%, 10% / 0.6);
+      padding: 4px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 10;
+    }
+
+    .lang-btn {
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .lang-btn:hover {
+      color: var(--text);
+    }
+
+    .lang-btn.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 12px hsl(270, 70%, 60% / 0.3);
+    }
+
+    /* ─── Title ─── */
+    .title {
+      margin-bottom: 0.5rem;
+      text-align: center;
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 700;
+      letter-spacing: 0.3em;
+      color: var(--primary);
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ─── Status Indicator ─── */
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 2.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: hsl(222, 15%, 55% / 0.4);
+      transition: all 0.3s;
+    }
+
+    .status-dot.live {
+      background: var(--emerald);
+      box-shadow: 0 0 12px hsl(160, 60%, 50% / 0.5);
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.connecting {
+      background: var(--amber);
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .status-text {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--text-muted);
+    }
+
+    /* ─── Equalizer Wrapper ─── */
+    .equalizer-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 42rem;
+      padding: 0 1rem;
+      z-index: 1;
+    }
+
+    .equalizer-canvas {
+      display: block;
+      width: 100%;
+      height: 160px;
+    }
+
+    @media (min-width: 768px) {
+      .equalizer-canvas { height: 192px; }
+    }
+
+    @media (min-width: 1024px) {
+      .equalizer-canvas { height: 224px; }
+    }
+
+    /* ─── Play Button ─── */
+    .play-btn {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      border: 2px solid hsl(270, 70%, 60% / 0.3);
+      background: hsl(225, 40%, 10% / 0.8);
+      color: var(--primary);
+      box-shadow: 0 25px 50px hsl(270, 70%, 60% / 0.2);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .play-btn:hover {
+      transform: translate(-50%, -50%) scale(1.1);
+      border-color: hsl(270, 70%, 60% / 0.6);
+      box-shadow: 0 25px 50px hsl(270, 70%, 60% / 0.4);
+    }
+
+    .play-btn:active {
+      transform: translate(-50%, -50%) scale(0.95);
+    }
+
+    .play-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .play-btn svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .play-btn .play-icon {
+      margin-left: 3px;
+    }
+
+    @media (min-width: 768px) {
+      .play-btn {
+        width: 80px;
+        height: 80px;
+      }
+      .play-btn svg {
+        width: 28px;
+        height: 28px;
+      }
+    }
+
+    /* Spin animation for loading */
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+
+    /* ─── Now Playing ─── */
+    .now-playing {
+      margin-top: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .now-playing-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.25em;
+      color: var(--text-muted);
+    }
+
+    .now-playing-song {
+      text-align: center;
+      font-size: 1.125rem;
+      font-weight: 500;
+      color: var(--text);
+      text-wrap: balance;
+      overflow: hidden;
+    }
+
+    @media (min-width: 768px) {
+      .now-playing-song { font-size: 1.25rem; }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    /* ─── Volume Control ─── */
+    .volume-control {
+      margin-top: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      max-width: 20rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .volume-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color 0.2s;
+      display: flex;
+      align-items: center;
+      padding: 4px;
+    }
+
+    .volume-btn:hover {
+      color: var(--text);
+    }
+
+    .volume-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .volume-slider-wrapper {
+      flex: 1;
+    }
+
+    .volume-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+      background: linear-gradient(
+        to right,
+        var(--primary) 0%,
+        var(--primary) 75%,
+        var(--border) 75%,
+        var(--border) 100%
+      );
+    }
+
+    .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 10px hsl(270, 70%, 60% / 0.5);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    .volume-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .volume-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border: none;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 10px hsl(270, 70%, 60% / 0.5);
+      cursor: pointer;
+    }
+
+    .volume-slider::-moz-range-track {
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border);
+    }
+  </style>
+</head>
+<body>
+  <main class="radio-main">
+    <!-- Ambient background glow -->
+    <div class="ambient-glow"></div>
+
+    <!-- Language selector -->
+    <div class="lang-selector" role="group" aria-label="Language">
+      <button class="lang-btn active" data-lang="ru" aria-label="Russian">RU</button>
+      <button class="lang-btn" data-lang="tj" aria-label="Tajik">TJ</button>
+      <button class="lang-btn" data-lang="en" aria-label="English">EN</button>
+    </div>
+
+    <!-- Title -->
+    <h1 class="title" id="radioTitle">NAVO RADIO</h1>
+
+    <!-- Live indicator -->
+    <div class="status">
+      <span class="status-dot" id="statusDot"></span>
+      <span class="status-text" id="statusText"></span>
+    </div>
+
+    <!-- Equalizer canvas -->
+    <div class="equalizer-wrapper">
+      <canvas class="equalizer-canvas" id="equalizerCanvas"></canvas>
+
+      <!-- Play button overlay -->
+      <button class="play-btn" id="playBtn" aria-label="Play">
+        <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5v14l11-7z" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Now playing section -->
+    <div class="now-playing">
+      <span class="now-playing-label" id="nowPlayingLabel"></span>
+      <div class="now-playing-song" id="nowPlayingSong"></div>
+    </div>
+
+    <!-- Volume control -->
+    <div class="volume-control">
+      <button class="volume-btn" id="muteBtn" aria-label="Mute">
+        <svg id="volumeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 5L6 9H2v6h4l5 4V5z" />
+          <path id="volWave1" d="M15.54 8.46a5 5 0 010 7.07" />
+          <path id="volWave2" d="M19.07 4.93a10 10 0 010 14.14" />
+        </svg>
+      </button>
+      <div class="volume-slider-wrapper">
+        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.01" value="0.75" aria-label="Volume" />
+      </div>
+    </div>
+  </main>
+
+  <script>
+    /* ═══════════════════════════════════════════════
+       NAVO RADIO — Vanilla JS
+       ═══════════════════════════════════════════════ */
+
+    /* ─── i18n Translations ─── */
+    const translations = {
+      en: {
+        title: "NAVO RADIO",
+        nowPlaying: "Now Playing",
+        loading: "Loading...",
+        play: "Play",
+        pause: "Pause",
+        volume: "Volume",
+        live: "LIVE",
+        offline: "Offline",
+        connecting: "Connecting..."
+      },
+      ru: {
+        title: "NAVO RADIO",
+        nowPlaying: "Сейчас играет",
+        loading: "Загрузка...",
+        play: "Воспроизвести",
+        pause: "Пауза",
+        volume: "Громкость",
+        live: "ЭФИР",
+        offline: "Не в сети",
+        connecting: "Подключение..."
+      },
+      tj: {
+        title: "NAVO RADIO",
+        nowPlaying: "Ҳоло мешунавед",
+        loading: "Боргирӣ...",
+        play: "Пахш",
+        pause: "Таваққуф",
+        volume: "Овоз",
+        live: "МУСТАҚИМ",
+        offline: "Офлайн",
+        connecting: "Пайвастшавӣ..."
+      }
+    };
+
+    /* ─── State ─── */
+    let currentLang = "ru";
+    let isPlaying = false;
+    let isConnecting = false;
+    let currentVolume = 0.75;
+    let currentSong = "";
+    let animFrameId = 0;
+
+    /* ─── Audio / Web Audio API ─── */
+    let audio = null;
+    let audioCtx = null;
+    let analyser = null;
+    let source = null;
+
+    const STREAM_URL = "http://localhost:8000/stream";
+
+    /* Demo song list */
+    const songs = [
+      "Shahriyor - Modaram",
+      "Farrux Xamrayev - Yor-Yor",
+      "Manizha - Sabo",
+      "Nigina Amonqulova - Oshiq",
+      "Sadriddin - Majnun",
+      "Talib Tale - Gozlerin"
+    ];
+
+    /* ─── DOM Elements ─── */
+    const titleEl = document.getElementById("radioTitle");
+    const statusDot = document.getElementById("statusDot");
+    const statusText = document.getElementById("statusText");
+    const canvas = document.getElementById("equalizerCanvas");
+    const ctx = canvas.getContext("2d");
+    const playBtn = document.getElementById("playBtn");
+    const nowPlayingLabel = document.getElementById("nowPlayingLabel");
+    const nowPlayingSong = document.getElementById("nowPlayingSong");
+    const muteBtn = document.getElementById("muteBtn");
+    const volumeSlider = document.getElementById("volumeSlider");
+    const volWave1 = document.getElementById("volWave1");
+    const volWave2 = document.getElementById("volWave2");
+    const langButtons = document.querySelectorAll(".lang-btn");
+
+    /* ─── Helper: Update UI text ─── */
+    function updateUI() {
+      const t = translations[currentLang];
+      titleEl.textContent = t.title;
+      nowPlayingLabel.textContent = t.nowPlaying;
+      nowPlayingSong.textContent = currentSong || t.loading;
+      playBtn.setAttribute("aria-label", isPlaying ? t.pause : t.play);
+      volumeSlider.setAttribute("aria-label", t.volume);
+
+      /* Status */
+      if (isConnecting) {
+        statusText.textContent = t.connecting;
+        statusDot.className = "status-dot connecting";
+      } else if (isPlaying) {
+        statusText.textContent = t.live;
+        statusDot.className = "status-dot live";
+      } else {
+        statusText.textContent = t.offline;
+        statusDot.className = "status-dot";
+      }
+    }
+
+    /* ─── Helper: Update play button icon ─── */
+    function updatePlayIcon() {
+      if (isConnecting) {
+        playBtn.innerHTML = `
+          <svg class="spin" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+            <path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>`;
+      } else if (isPlaying) {
+        playBtn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="4" width="4" height="16" rx="1"/>
+            <rect x="14" y="4" width="4" height="16" rx="1"/>
+          </svg>`;
+      } else {
+        playBtn.innerHTML = `
+          <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z"/>
+          </svg>`;
+      }
+    }
+
+    /* ─── Helper: Update volume icon ─── */
+    function updateVolumeIcon() {
+      if (currentVolume === 0) {
+        muteBtn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+            <line x1="23" y1="9" x2="17" y2="15"/>
+            <line x1="17" y1="9" x2="23" y2="15"/>
+          </svg>`;
+      } else {
+        let wavesHtml = '<path d="M11 5L6 9H2v6h4l5 4V5z"/>';
+        if (currentVolume > 0.3) {
+          wavesHtml += '<path d="M15.54 8.46a5 5 0 010 7.07"/>';
+        }
+        if (currentVolume > 0.6) {
+          wavesHtml += '<path d="M19.07 4.93a10 10 0 010 14.14"/>';
+        }
+        muteBtn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            ${wavesHtml}
+          </svg>`;
+      }
+    }
+
+    /* ─── Helper: Update volume slider gradient ─── */
+    function updateVolumeSliderBg() {
+      const pct = currentVolume * 100;
+      volumeSlider.style.background = `linear-gradient(to right, var(--primary) 0%, var(--primary) ${pct}%, var(--border) ${pct}%, var(--border) 100%)`;
+    }
+
+    /* ─── Equalizer: Draw live (audio-reactive) ─── */
+    function drawLiveEqualizer() {
+      if (!analyser) return;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      function draw() {
+        animFrameId = requestAnimationFrame(draw);
+        analyser.getByteFrequencyData(dataArray);
+
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+
+        const W = rect.width;
+        const H = rect.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const barCount = 64;
+        const gap = 3;
+        const barWidth = (W - gap * (barCount - 1)) / barCount;
+        const step = Math.floor(bufferLength / barCount);
+
+        for (let i = 0; i < barCount; i++) {
+          const raw = dataArray[i * step] / 255;
+          const barHeight = Math.max(raw * H * 0.85, 3);
+          const x = i * (barWidth + gap);
+          const y = H - barHeight;
+
+          const gradient = ctx.createLinearGradient(x, H, x, y);
+          gradient.addColorStop(0, "hsl(270, 70%, 40%)");
+          gradient.addColorStop(0.5, "hsl(270, 80%, 58%)");
+          gradient.addColorStop(1, "hsl(280, 90%, 72%)");
+
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.roundRect(x, y, barWidth, barHeight, [3, 3, 0, 0]);
+          ctx.fill();
+
+          ctx.shadowColor = "hsl(270, 80%, 58%)";
+          ctx.shadowBlur = 8;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+      }
+
+      draw();
+    }
+
+    /* ─── Equalizer: Draw idle (wave animation) ─── */
+    let idleTime = 0;
+
+    function drawIdleEqualizer() {
+      function drawIdle() {
+        animFrameId = requestAnimationFrame(drawIdle);
+        idleTime += 0.02;
+
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+
+        const W = rect.width;
+        const H = rect.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const barCount = 64;
+        const gap = 3;
+        const barWidth = (W - gap * (barCount - 1)) / barCount;
+
+        for (let i = 0; i < barCount; i++) {
+          const normalized = i / barCount;
+          const wave =
+            Math.sin(idleTime + normalized * 4) * 0.15 +
+            Math.sin(idleTime * 1.5 + normalized * 6) * 0.1 +
+            0.08;
+          const barHeight = Math.max(wave * H, 3);
+          const x = i * (barWidth + gap);
+          const y = H - barHeight;
+
+          const gradient = ctx.createLinearGradient(x, H, x, y);
+          gradient.addColorStop(0, "hsl(270, 50%, 25%)");
+          gradient.addColorStop(1, "hsl(270, 60%, 40%)");
+
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.roundRect(x, y, barWidth, barHeight, [3, 3, 0, 0]);
+          ctx.fill();
+        }
+      }
+
+      drawIdle();
+    }
+
+    /* ─── Set current song with fade animation ─── */
+    function setSong(name) {
+      currentSong = name;
+      nowPlayingSong.textContent = name;
+      nowPlayingSong.classList.remove("fade-in");
+      /* Force reflow to restart animation */
+      void nowPlayingSong.offsetWidth;
+      nowPlayingSong.classList.add("fade-in");
+    }
+
+    /* ─── Play / Pause toggle ─── */
+    let retryCount = 0;
+    const MAX_RETRIES = 20;
+
+    async function tryPlay() {
+      if (!audio) {
+        audio = new Audio();
+        audio.crossOrigin = "anonymous";
+        audio.preload = "none";
+      }
+
+      audio.src = STREAM_URL;
+      audio.volume = currentVolume;
+      audio.load();
+
+      if (!audioCtx) {
+        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioCtxClass();
+      }
+
+      if (audioCtx.state === "suspended") {
+        await audioCtx.resume();
+      }
+
+      if (!source) {
+        source = audioCtx.createMediaElementSource(audio);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.8;
+        source.connect(analyser);
+        analyser.connect(audioCtx.destination);
+      }
+
+      await audio.play();
+    }
+
+    async function togglePlay() {
+      if (isPlaying) {
+        if (audio) {
+          audio.pause();
+          audio.src = "";
+        }
+        isPlaying = false;
+        cancelAnimationFrame(animFrameId);
+        drawIdleEqualizer();
+        updatePlayIcon();
+        updateUI();
+        return;
+      }
+
+      isConnecting = true;
+      playBtn.disabled = true;
+      updatePlayIcon();
+      updateUI();
+
+      while (retryCount < MAX_RETRIES) {
+        try {
+          await tryPlay();
+          isPlaying = true;
+          isConnecting = false;
+          retryCount = 0;
+          playBtn.disabled = false;
+          cancelAnimationFrame(animFrameId);
+          drawLiveEqualizer();
+          updatePlayIcon();
+          updateUI();
+          return;
+        } catch (err) {
+          console.warn("Stream error, retry " + (retryCount + 1) + "/" + MAX_RETRIES, err);
+          retryCount++;
+          statusText.textContent = "Поток не готов, повтор " + retryCount + "...";
+          await new Promise(function (r) { setTimeout(r, 4000); });
+        }
+      }
+
+      retryCount = 0;
+      isConnecting = false;
+      playBtn.disabled = false;
+      updatePlayIcon();
+      updateUI();
+    }
+
+    /* ─── Event Listeners ─── */
+
+    /* Play button */
+    playBtn.addEventListener("click", togglePlay);
+
+    /* Language buttons */
+    langButtons.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        langButtons.forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        currentLang = btn.dataset.lang;
+        document.documentElement.lang = currentLang === "tj" ? "tg" : currentLang;
+        updateUI();
+      });
+    });
+
+    /* Volume slider */
+    volumeSlider.addEventListener("input", function () {
+      currentVolume = parseFloat(this.value);
+      if (audio) audio.volume = currentVolume;
+      updateVolumeSliderBg();
+      updateVolumeIcon();
+    });
+
+    /* Mute button */
+    muteBtn.addEventListener("click", function () {
+      if (currentVolume > 0) {
+        currentVolume = 0;
+      } else {
+        currentVolume = 0.75;
+      }
+      volumeSlider.value = currentVolume;
+      if (audio) audio.volume = currentVolume;
+      updateVolumeSliderBg();
+      updateVolumeIcon();
+    });
+
+    /* ─── Init ─── */
+    setSong(songs[0]);
+    updateUI();
+    updateVolumeSliderBg();
+    updateVolumeIcon();
+    drawIdleEqualizer();
+
+    /* Rotate songs every 30s (simulate metadata) */
+    setInterval(function () {
+      const idx = Math.floor(Math.random() * songs.length);
+      setSong(songs[idx]);
+    }, 30000);
+  </script>
+</body>
+</html>
