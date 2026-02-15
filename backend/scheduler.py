@@ -19,6 +19,7 @@ from config import (
 
 class BlockType(str, Enum):
     """Тип контента для эфира."""
+    JINGLE = "jingle"
     NEWS = "news"
     WEATHER = "weather"
     PODCAST = "podcast"
@@ -31,16 +32,32 @@ def get_moscow_now() -> datetime:
     return datetime.now(tz)
 
 
+_jingle_played_hour: int | None = None
+
+
+def mark_jingle_played() -> None:
+    """Вызвать после проигрывания заставки — не повторять в этом часу."""
+    global _jingle_played_hour
+    _jingle_played_hour = get_moscow_now().hour
+
+
 def get_current_block() -> tuple[BlockType, str | None]:
     """
     Возвращает (тип блока, дополнительный аргумент).
-    Для podcast — путь к файлу подкаста.
+    JINGLE — в :00 каждого часа (один раз).
+    Для podcast — имя файла подкаста.
     """
+    global _jingle_played_hour
     if FORCE_MUSIC:
         return BlockType.MUSIC, None
 
     now = get_moscow_now()
     hour = now.hour
+    minute = now.minute
+
+    # Аудиозаставка — раз в час в :00 (не повторять в том же часу)
+    if minute == 0 and _jingle_played_hour != hour:
+        return BlockType.JINGLE, None
 
     if hour in NEWS_HOURS:
         return BlockType.NEWS, None

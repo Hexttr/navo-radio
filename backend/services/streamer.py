@@ -67,11 +67,18 @@ def _feed_worker() -> None:
             files = []
             if intro_path and intro_path.exists():
                 files.append(intro_path)
+            if not track_path.exists():
+                print(f"[STREAMER] Файл не найден, пропуск: {track_path}")
+                continue
             files.append(track_path)
             for p in files:
-                with open(p, "rb") as f:
-                    while chunk := f.read(65536):
-                        proc.stdin.write(chunk)
+                try:
+                    with open(p, "rb") as f:
+                        while chunk := f.read(65536):
+                            proc.stdin.write(chunk)
+                except Exception as e:
+                    print(f"[STREAMER] Ошибка чтения {p}: {e}")
+                    break
             proc.stdin.flush()
     except BrokenPipeError:
         print("[STREAMER] FFmpeg pipe closed (Icecast disconnect?)")
@@ -87,13 +94,16 @@ def _feed_worker() -> None:
 
 
 def start_continuous_stream() -> bool:
-    """Запустить непрерывный стрим. Возвращает True если успешно."""
+    """Запустить непрерывный стрим. Перезапускает feeder при падении."""
     global _feeder_thread, _running
     if not ICECAST_PASSWORD:
         print("[STREAMER] ICECAST_PASSWORD не задан")
         return False
     if _feeder_thread and _feeder_thread.is_alive():
         return True
+    # Feeder умер — перезапускаем (восстановление после сбоя Icecast/FFmpeg)
+    if _feeder_thread and not _feeder_thread.is_alive():
+        print("[STREAMER] Feeder перезапуск после сбоя")
     _running = True
     _feeder_thread = threading.Thread(target=_feed_worker, daemon=True)
     _feeder_thread.start()

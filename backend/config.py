@@ -15,6 +15,10 @@ load_dotenv(_env_path)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PODCASTS_DIR = PROJECT_ROOT / "podcasts"
 CACHE_DIR = PROJECT_ROOT / "cache"
+JINGLES_DIR = PROJECT_ROOT / "jingles"
+
+# Аудиозаставка (короткий mp3, раз в час)
+JINGLE_FILE = os.getenv("JINGLE_FILE", "jingle.mp3")
 
 # Часовой пояс расписания
 TIMEZONE = os.getenv("TZ", "Europe/Moscow")
