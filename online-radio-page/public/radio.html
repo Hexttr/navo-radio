@@ -45,13 +45,25 @@
       position: relative;
     }
 
-    .video-bg {
+    .video-bg-wrap {
       position: fixed;
       inset: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover;
       z-index: 0;
+    }
+
+    .video-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: opacity 0.4s ease;
+    }
+
+    .video-bg.video-bg-fade-out {
+      opacity: 0;
     }
 
     ::selection {
@@ -387,9 +399,10 @@
   </style>
 </head>
 <body>
-  <video class="video-bg" autoplay muted loop playsinline>
-    <source src="/background.mp4" type="video/mp4" />
-  </video>
+  <div class="video-bg-wrap">
+    <video class="video-bg" id="videoBg1" muted playsinline></video>
+    <video class="video-bg" id="videoBg2" muted playsinline style="opacity:0"></video>
+  </div>
   <main class="radio-main">
     <!-- Ambient background glow -->
     <div class="ambient-glow"></div>
@@ -686,6 +699,47 @@
       updateVolumeSliderBg();
       updateVolumeIcon();
     });
+
+    /* ─── Video background: seamless loop with crossfade ─── */
+    (function() {
+      var v1 = document.getElementById("videoBg1");
+      var v2 = document.getElementById("videoBg2");
+      var CROSSFADE = 0.5;
+      var src = "/background.mp4";
+      var inCrossfade = false;
+      v1.src = v2.src = src;
+
+      function startVideo(v) {
+        v.currentTime = 0;
+        v.play();
+      }
+
+      function crossfade(from, to) {
+        if (inCrossfade) return;
+        inCrossfade = true;
+        to.style.opacity = "0";
+        to.classList.remove("video-bg-fade-out");
+        startVideo(to);
+        from.classList.add("video-bg-fade-out");
+        setTimeout(function() {
+          from.pause();
+          from.classList.remove("video-bg-fade-out");
+          inCrossfade = false;
+        }, CROSSFADE * 1000);
+        requestAnimationFrame(function() { to.style.opacity = "1"; });
+      }
+
+      function checkLoop(v, next) {
+        if (!inCrossfade && v.duration && v.currentTime >= v.duration - CROSSFADE) {
+          crossfade(v, next);
+        }
+      }
+
+      v1.addEventListener("timeupdate", function() { checkLoop(v1, v2); });
+      v2.addEventListener("timeupdate", function() { checkLoop(v2, v1); });
+
+      startVideo(v1);
+    })();
 
     /* ─── Init ─── */
     setSong(defaultNowPlaying);
