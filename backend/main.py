@@ -51,19 +51,22 @@ def _keep_stream_alive() -> None:
 
 
 def _warmup_stream(block_type: BlockType) -> None:
-    """Быстрый старт: сразу подключаем источник, чтобы плеер не висел на «Подключение...»."""
+    """Быстрый старт: сразу подключаем источник. Для NEWS/WEATHER — 2–3 тишины, т.к. генерация 15–30 сек."""
     # JINGLE и PODCAST — мгновенно, warmup не нужен
     if block_type in (BlockType.JINGLE, BlockType.PODCAST):
         return
     if not start_continuous_stream():
         return
+    silence = _ensure_silence_file()
     jingle = JINGLES_DIR / JINGLE_FILE
     if jingle.exists():
         enqueue_track(None, jingle)
-    else:
-        silence = _ensure_silence_file()
-        if silence.exists():
-            enqueue_track(None, silence)
+    # NEWS/WEATHER: генерация долгая — подкладываем 2 тишины (16 сек) на время fetch+Groq+TTS
+    if block_type in (BlockType.NEWS, BlockType.WEATHER) and silence.exists():
+        for _ in range(2):
+            enqueue_track(None, silence, block=False)
+    elif silence.exists():
+        enqueue_track(None, silence)
 
 
 def main() -> None:
@@ -82,7 +85,11 @@ def main() -> None:
         _warmup_stream(block_type)
         run_block(block_type, arg)
         if block_type != BlockType.MUSIC:
-            time.sleep(10)
+            # Подложить тишину, чтобы эфир не молчал во время паузы до следующей проверки
+            silence = _ensure_silence_file()
+            if silence.exists():
+                enqueue_track(None, silence, block=False)
+            time.sleep(5)
 
 
 if __name__ == "__main__":
