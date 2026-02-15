@@ -2,7 +2,6 @@
 NAVO RADIO — стриминг в Icecast.
 Один долгоживущий FFmpeg читает MP3 из pipe — бесшовная смена треков без 409.
 """
-import array
 import queue
 import subprocess
 import threading
@@ -18,26 +17,12 @@ from config import (
 
 # Очередь: (intro_path | None, track_path). Feeder пишет в FFmpeg stdin.
 _stream_queue: queue.Queue[tuple[Path | None, Path] | None] = queue.Queue(maxsize=16)
-
-# Уровень звука 0-255 для эквалайзера (Safari fallback)
-_audio_level = 0
-_level_lock = threading.Lock()
-
-
-def get_audio_level() -> int:
-    """Текущий уровень звука (0-255)."""
-    with _level_lock:
-        return _audio_level
-
-
-_feeder_thread: threading.Thread | None = None
 _ffmpeg_proc: subprocess.Popen | None = None
 _running = False
 
 
 def _normalize_and_write(proc_stdin, ffmpeg_exe: str, path: Path) -> bool:
     """Декодировать в PCM (s16le) — без границ MP3, стабильно при склейке."""
-    global _audio_level
     try:
         norm = subprocess.Popen(
             [
@@ -56,16 +41,6 @@ def _normalize_and_write(proc_stdin, ffmpeg_exe: str, path: Path) -> bool:
         if norm.stdout:
             while chunk := norm.stdout.read(65536):
                 proc_stdin.write(chunk)
-                # RMS для эквалайзера (Safari fallback)
-                if len(chunk) >= 2:
-                    n = len(chunk) // 2
-                    samples = array.array("h")
-                    samples.frombytes(chunk[: n * 2])
-                    if n > 0:
-                        rms = (sum(s * s for s in samples) / n) ** 0.5
-                        level = min(255, int(rms / 32768 * 255))
-                        with _level_lock:
-                            _audio_level = level
         norm.wait()
         return norm.returncode == 0
     except Exception as e:

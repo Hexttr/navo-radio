@@ -5,7 +5,6 @@ NAVO RADIO — точка входа.
 import time
 
 from config import FORCE_MUSIC, JINGLES_DIR, JINGLE_FILE, PROJECT_ROOT
-from services.level_server import start_level_server
 from scheduler import BlockType, get_current_block, get_moscow_now, mark_anchor_played, mark_jingle_played
 from services.jingle_block import run_jingle_block
 from services.music_block import _ensure_silence_file, run_music_track
@@ -57,7 +56,6 @@ def _warmup_stream(block_type: BlockType) -> None:
 
 
 def main() -> None:
-    start_level_server()
     print("NAVO RADIO — Backend")
     print(f"Проект: {PROJECT_ROOT}")
     if FORCE_MUSIC:
