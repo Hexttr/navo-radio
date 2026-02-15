@@ -32,7 +32,7 @@ WEATHER_HOURS = (10, 14, 17, 20)
 PODCAST_HOURS = (11, 16, 19, 22)
 
 # Подкасты по кругу: 11→1, 16→2, 19→3, 22→4
-PODCAST_FILES = ("1.mp3", "2.mp3", "3.mp3", "4.mp4")
+PODCAST_FILES = ("1.mp3", "2.mp3", "3.mp3", "4.mp3")
 
 # API
 JAMENDO_CLIENT_ID = os.getenv("JAMENDO_CLIENT_ID", "")

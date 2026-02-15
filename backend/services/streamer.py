@@ -16,28 +16,55 @@ from config import (
 )
 
 # Очередь: (intro_path | None, track_path). Feeder пишет в FFmpeg stdin.
-_stream_queue: queue.Queue[tuple[Path | None, Path] | None] = queue.Queue(maxsize=4)
+_stream_queue: queue.Queue[tuple[Path | None, Path] | None] = queue.Queue(maxsize=16)
 _feeder_thread: threading.Thread | None = None
 _ffmpeg_proc: subprocess.Popen | None = None
 _running = False
 
 
+def _normalize_and_write(proc_stdin, ffmpeg_exe: str, path: Path) -> bool:
+    """Декодировать в PCM (s16le) — без границ MP3, стабильно при склейке."""
+    try:
+        norm = subprocess.Popen(
+            [
+                ffmpeg_exe,
+                "-y", "-loglevel", "error",
+                "-fflags", "+genpts+discardcorrupt",
+                "-err_detect", "ignore_err",
+                "-i", str(path),
+                "-c:a", "pcm_s16le", "-ar", "44100", "-ac", "1",
+                "-f", "s16le", "-",
+            ],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
+        if norm.stdout:
+            while chunk := norm.stdout.read(65536):
+                proc_stdin.write(chunk)
+        norm.wait()
+        return norm.returncode == 0
+    except Exception as e:
+        print(f"[STREAMER] Ошибка {path}: {e}")
+        return False
+
+
 def _feed_worker() -> None:
-    """Поток: читает из очереди, конкатенирует MP3, пишет в FFmpeg stdin."""
+    """Поток: читает из очереди, декодирует в PCM, пишет в FFmpeg stdin."""
     global _ffmpeg_proc
     ffmpeg_exe = FFMPEG_PATH if FFMPEG_PATH else "ffmpeg"
     icecast_url = (
         f"icecast://source:{ICECAST_PASSWORD}@{ICECAST_HOST}:{ICECAST_PORT}/{ICECAST_MOUNT}"
     )
+    # PCM в pipe — нет границ MP3, нет "Header missing"
     cmd = [
         ffmpeg_exe,
         "-loglevel", "warning",
         "-re",
-        "-f", "mp3",
+        "-f", "s16le", "-ar", "44100", "-ac", "1",
         "-i", "pipe:0",
-        "-c:a", "copy",
-        "-content_type", "audio/mpeg",
-        "-f", "mp3",
+        "-c:a", "libmp3lame", "-b:a", "128k",
+        "-content_type", "audio/mpeg", "-f", "mp3",
         icecast_url,
     ]
     proc = subprocess.Popen(
@@ -72,12 +99,7 @@ def _feed_worker() -> None:
                 continue
             files.append(track_path)
             for p in files:
-                try:
-                    with open(p, "rb") as f:
-                        while chunk := f.read(65536):
-                            proc.stdin.write(chunk)
-                except Exception as e:
-                    print(f"[STREAMER] Ошибка чтения {p}: {e}")
+                if not _normalize_and_write(proc.stdin, ffmpeg_exe, p):
                     break
             proc.stdin.flush()
     except BrokenPipeError:
@@ -110,13 +132,15 @@ def start_continuous_stream() -> bool:
     return True
 
 
-def enqueue_track(intro_path: Path | None, track_path: Path) -> bool:
-    """Добавить трек в очередь. Блокирует если очередь полна."""
+def enqueue_track(intro_path: Path | None, track_path: Path, block: bool = True) -> bool:
+    """Добавить трек в очередь. block=False — не ждать при переполнении."""
     try:
-        _stream_queue.put((intro_path, track_path), timeout=120)
+        if block:
+            _stream_queue.put((intro_path, track_path), timeout=120)
+        else:
+            _stream_queue.put_nowait((intro_path, track_path))
         return True
     except queue.Full:
-        print("[STREAMER] Queue full, drop")
         return False
 
 

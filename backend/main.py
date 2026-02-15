@@ -4,12 +4,13 @@ NAVO RADIO — точка входа.
 """
 import time
 
-from config import FORCE_MUSIC, PROJECT_ROOT
+from config import FORCE_MUSIC, JINGLES_DIR, JINGLE_FILE, PROJECT_ROOT
 from scheduler import BlockType, get_current_block, get_moscow_now, mark_jingle_played
 from services.jingle_block import run_jingle_block
-from services.music_block import run_music_track
+from services.music_block import _ensure_silence_file, run_music_track
 from services.news_block import run_news_block
 from services.podcast_block import run_podcast_block
+from services.streamer import enqueue_track, start_continuous_stream
 from services.weather_block import run_weather_block
 
 
@@ -21,15 +22,18 @@ def run_block(block_type: BlockType, arg: str | None) -> None:
     elif block_type == BlockType.NEWS:
         run_news_block()
         while get_current_block()[0] == BlockType.NEWS:
-            time.sleep(60)
+            _keep_stream_alive()
+            time.sleep(8)  # тишина 8 сек — подкладываем чаще, чтобы эфир не заглох
     elif block_type == BlockType.WEATHER:
         run_weather_block()
         while get_current_block()[0] == BlockType.WEATHER:
-            time.sleep(60)
+            _keep_stream_alive()
+            time.sleep(8)
     elif block_type == BlockType.PODCAST:
         run_podcast_block(arg or "")
         while get_current_block()[0] == BlockType.PODCAST:
-            time.sleep(60)
+            _keep_stream_alive()
+            time.sleep(8)
     elif block_type == BlockType.MUSIC:
         # Цикл треков — проверяем расписание перед каждым треком
         while get_current_block()[0] == BlockType.MUSIC:
@@ -38,17 +42,44 @@ def run_block(block_type: BlockType, arg: str | None) -> None:
                 time.sleep(30)
 
 
+def _keep_stream_alive() -> None:
+    """Пока блок длится — подкладывать тишину, чтобы эфир не заглох. Не блокирует при переполнении."""
+    if start_continuous_stream():
+        silence = _ensure_silence_file()
+        if silence.exists():
+            enqueue_track(None, silence, block=False)
+
+
+def _warmup_stream(block_type: BlockType) -> None:
+    """Быстрый старт: сразу подключаем источник, чтобы плеер не висел на «Подключение...»."""
+    # JINGLE и PODCAST — мгновенно, warmup не нужен
+    if block_type in (BlockType.JINGLE, BlockType.PODCAST):
+        return
+    if not start_continuous_stream():
+        return
+    jingle = JINGLES_DIR / JINGLE_FILE
+    if jingle.exists():
+        enqueue_track(None, jingle)
+    else:
+        silence = _ensure_silence_file()
+        if silence.exists():
+            enqueue_track(None, silence)
+
+
 def main() -> None:
     print("NAVO RADIO — Backend")
     print(f"Проект: {PROJECT_ROOT}")
     if FORCE_MUSIC:
         print("Режим: FORCE_MUSIC (всегда музыка)")
+    else:
+        print("Режим: расписание (врезки включены)")
     print("---")
 
     while True:
         now = get_moscow_now()
         block_type, arg = get_current_block()
         print(f"[{now.strftime('%H:%M:%S')} MSK] {block_type.value}" + (f" ({arg})" if arg else ""))
+        _warmup_stream(block_type)
         run_block(block_type, arg)
         if block_type != BlockType.MUSIC:
             time.sleep(10)
