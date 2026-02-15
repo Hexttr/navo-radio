@@ -54,13 +54,6 @@
       z-index: 0;
     }
 
-    .video-bg-overlay {
-      position: fixed;
-      inset: 0;
-      background: linear-gradient(to bottom, rgba(15, 23, 36, 0.7) 0%, rgba(15, 23, 36, 0.85) 100%);
-      z-index: 1;
-    }
-
     ::selection {
       background: hsl(270, 70%, 60% / 0.3);
     }
@@ -189,35 +182,16 @@
       color: var(--text-muted);
     }
 
-    /* ─── Equalizer Wrapper ─── */
-    .equalizer-wrapper {
+    /* ─── Play Button ─── */
+    .play-btn-wrapper {
       position: relative;
       width: 100%;
-      max-width: 42rem;
-      padding: 0 1rem;
-      z-index: 1;
+      display: flex;
+      justify-content: center;
+      padding: 2rem 0;
     }
-
-    .equalizer-canvas {
-      display: block;
-      width: 100%;
-      height: 160px;
-    }
-
-    @media (min-width: 768px) {
-      .equalizer-canvas { height: 192px; }
-    }
-
-    @media (min-width: 1024px) {
-      .equalizer-canvas { height: 224px; }
-    }
-
-    /* ─── Play Button ─── */
     .play-btn {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
+      position: relative;
       width: 64px;
       height: 64px;
       display: flex;
@@ -235,13 +209,13 @@
     }
 
     .play-btn:hover {
-      transform: translate(-50%, -50%) scale(1.1);
+      transform: scale(1.1);
       border-color: hsl(270, 70%, 60% / 0.6);
       box-shadow: 0 25px 50px hsl(270, 70%, 60% / 0.4);
     }
 
     .play-btn:active {
-      transform: translate(-50%, -50%) scale(0.95);
+      transform: scale(0.95);
     }
 
     .play-btn:disabled {
@@ -416,7 +390,6 @@
   <video class="video-bg" autoplay muted loop playsinline>
     <source src="/background.mp4" type="video/mp4" />
   </video>
-  <div class="video-bg-overlay" aria-hidden="true"></div>
   <main class="radio-main">
     <!-- Ambient background glow -->
     <div class="ambient-glow"></div>
@@ -437,11 +410,7 @@
       <span class="status-text" id="statusText"></span>
     </div>
 
-    <!-- Equalizer canvas -->
-    <div class="equalizer-wrapper">
-      <canvas class="equalizer-canvas" id="equalizerCanvas"></canvas>
-
-      <!-- Play button overlay -->
+    <div class="play-btn-wrapper">
       <button class="play-btn" id="playBtn" aria-label="Play">
         <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor">
           <path d="M8 5v14l11-7z" />
@@ -518,13 +487,9 @@
     let isConnecting = false;
     let currentVolume = 0.75;
     let currentSong = "";
-    let animFrameId = 0;
 
-    /* ─── Audio / Web Audio API ─── */
+    /* ─── Audio ─── */
     let audio = null;
-    let audioCtx = null;
-    let analyser = null;
-    let source = null;
 
     const STREAM_URL = (typeof window !== "undefined" && window.location.origin) ? (window.location.origin + "/stream") : "http://localhost:8000/stream";
 
@@ -535,15 +500,11 @@
     const titleEl = document.getElementById("radioTitle");
     const statusDot = document.getElementById("statusDot");
     const statusText = document.getElementById("statusText");
-    const canvas = document.getElementById("equalizerCanvas");
-    const ctx = canvas.getContext("2d");
     const playBtn = document.getElementById("playBtn");
     const nowPlayingLabel = document.getElementById("nowPlayingLabel");
     const nowPlayingSong = document.getElementById("nowPlayingSong");
     const muteBtn = document.getElementById("muteBtn");
     const volumeSlider = document.getElementById("volumeSlider");
-    const volWave1 = document.getElementById("volWave1");
-    const volWave2 = document.getElementById("volWave2");
     const langButtons = document.querySelectorAll(".lang-btn");
 
     /* ─── Helper: Update UI text ─── */
@@ -620,105 +581,6 @@
       volumeSlider.style.background = `linear-gradient(to right, var(--primary) 0%, var(--primary) ${pct}%, var(--border) ${pct}%, var(--border) 100%)`;
     }
 
-    /* ─── Equalizer: Draw live (audio-reactive) ─── */
-    function drawLiveEqualizer() {
-      if (!analyser) return;
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-
-      function draw() {
-        animFrameId = requestAnimationFrame(draw);
-        analyser.getByteFrequencyData(dataArray);
-        var sum = 0; for (var i = 0; i < dataArray.length; i++) sum += dataArray[i];
-        if (sum === 0) { for (var j = 0; j < dataArray.length; j++) dataArray[j] = 25 + Math.sin(Date.now()/150 + j*0.08) * 20; }
-
-        const dpr = window.devicePixelRatio || 1;
-        const rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-        ctx.scale(dpr, dpr);
-
-        const W = rect.width;
-        const H = rect.height;
-        ctx.clearRect(0, 0, W, H);
-
-        const barCount = 64;
-        const gap = 3;
-        const barWidth = (W - gap * (barCount - 1)) / barCount;
-        const step = Math.floor(bufferLength / barCount);
-
-        for (let i = 0; i < barCount; i++) {
-          const raw = dataArray[i * step] / 255;
-          const barHeight = Math.max(raw * H * 0.85, 3);
-          const x = i * (barWidth + gap);
-          const y = H - barHeight;
-
-          const gradient = ctx.createLinearGradient(x, H, x, y);
-          gradient.addColorStop(0, "hsl(270, 70%, 40%)");
-          gradient.addColorStop(0.5, "hsl(270, 80%, 58%)");
-          gradient.addColorStop(1, "hsl(280, 90%, 72%)");
-
-          ctx.fillStyle = gradient;
-          ctx.beginPath();
-          if (ctx.roundRect) { ctx.roundRect(x, y, barWidth, barHeight, [3, 3, 0, 0]); } else { ctx.rect(x, y, barWidth, barHeight); }
-          ctx.fill();
-
-          ctx.shadowColor = "hsl(270, 80%, 58%)";
-          ctx.shadowBlur = 8;
-          ctx.fill();
-          ctx.shadowBlur = 0;
-        }
-      }
-
-      draw();
-    }
-
-    /* ─── Equalizer: Draw idle (wave animation) ─── */
-    let idleTime = 0;
-
-    function drawIdleEqualizer() {
-      function drawIdle() {
-        animFrameId = requestAnimationFrame(drawIdle);
-        idleTime += 0.02;
-
-        const dpr = window.devicePixelRatio || 1;
-        const rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-        ctx.scale(dpr, dpr);
-
-        const W = rect.width;
-        const H = rect.height;
-        ctx.clearRect(0, 0, W, H);
-
-        const barCount = 64;
-        const gap = 3;
-        const barWidth = (W - gap * (barCount - 1)) / barCount;
-
-        for (let i = 0; i < barCount; i++) {
-          const normalized = i / barCount;
-          const wave =
-            Math.sin(idleTime + normalized * 4) * 0.15 +
-            Math.sin(idleTime * 1.5 + normalized * 6) * 0.1 +
-            0.08;
-          const barHeight = Math.max(wave * H, 3);
-          const x = i * (barWidth + gap);
-          const y = H - barHeight;
-
-          const gradient = ctx.createLinearGradient(x, H, x, y);
-          gradient.addColorStop(0, "hsl(270, 50%, 25%)");
-          gradient.addColorStop(1, "hsl(270, 60%, 40%)");
-
-          ctx.fillStyle = gradient;
-          ctx.beginPath();
-          if (ctx.roundRect) { ctx.roundRect(x, y, barWidth, barHeight, [3, 3, 0, 0]); } else { ctx.rect(x, y, barWidth, barHeight); }
-          ctx.fill();
-        }
-      }
-
-      drawIdle();
-    }
-
     /* ─── Set current song with fade animation ─── */
     function setSong(name) {
       currentSong = name;
@@ -743,25 +605,6 @@
       audio.src = STREAM_URL;
       audio.volume = currentVolume;
       audio.load();
-
-      if (!audioCtx) {
-        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
-        audioCtx = new AudioCtxClass();
-      }
-
-      if (audioCtx.state === "suspended") {
-        await audioCtx.resume();
-      }
-
-      if (!source) {
-        source = audioCtx.createMediaElementSource(audio);
-        analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 256;
-        analyser.smoothingTimeConstant = 0.8;
-        source.connect(analyser);
-        analyser.connect(audioCtx.destination);
-      }
-
       await audio.play();
     }
 
@@ -772,8 +615,6 @@
           audio.src = "";
         }
         isPlaying = false;
-        cancelAnimationFrame(animFrameId);
-        drawIdleEqualizer();
         updatePlayIcon();
         updateUI();
         return;
@@ -791,8 +632,6 @@
           isConnecting = false;
           retryCount = 0;
           playBtn.disabled = false;
-          cancelAnimationFrame(animFrameId);
-          drawLiveEqualizer();
           updatePlayIcon();
           updateUI();
           return;
@@ -853,7 +692,6 @@
     updateUI();
     updateVolumeSliderBg();
     updateVolumeIcon();
-    drawIdleEqualizer();
   </script>
 </body>
 </html>
