@@ -33,6 +33,8 @@ def get_moscow_now() -> datetime:
 
 
 _jingle_played_hour: int | None = None
+# Якорное событие (NEWS/WEATHER/PODCAST) сыграно в этом часу — до конца часа MUSIC
+_anchor_played_hour: int | None = None
 
 
 def mark_jingle_played() -> None:
@@ -41,13 +43,19 @@ def mark_jingle_played() -> None:
     _jingle_played_hour = get_moscow_now().hour
 
 
+def mark_anchor_played() -> None:
+    """Вызвать после проигрывания NEWS/WEATHER/PODCAST — до конца часа MUSIC."""
+    global _anchor_played_hour
+    _anchor_played_hour = get_moscow_now().hour
+
+
 def get_current_block() -> tuple[BlockType, str | None]:
     """
     Возвращает (тип блока, дополнительный аргумент).
     JINGLE — в :00 каждого часа (один раз).
-    Для podcast — имя файла подкаста.
+    NEWS/WEATHER/PODCAST — один раз в час, после — MUSIC до следующего якорного события.
     """
-    global _jingle_played_hour
+    global _jingle_played_hour, _anchor_played_hour
     if FORCE_MUSIC:
         return BlockType.MUSIC, None
 
@@ -55,9 +63,17 @@ def get_current_block() -> tuple[BlockType, str | None]:
     hour = now.hour
     minute = now.minute
 
+    # Новый час — сбросить флаг якорного события
+    if _anchor_played_hour is not None and _anchor_played_hour != hour:
+        _anchor_played_hour = None
+
     # Аудиозаставка — раз в час в :00 (не повторять в том же часу)
     if minute == 0 and _jingle_played_hour != hour:
         return BlockType.JINGLE, None
+
+    # Якорное событие уже сыграно в этом часу — музыка до конца часа
+    if _anchor_played_hour == hour:
+        return BlockType.MUSIC, None
 
     if hour in NEWS_HOURS:
         return BlockType.NEWS, None

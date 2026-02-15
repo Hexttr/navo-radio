@@ -5,7 +5,7 @@ NAVO RADIO — точка входа.
 import time
 
 from config import FORCE_MUSIC, JINGLES_DIR, JINGLE_FILE, PROJECT_ROOT
-from scheduler import BlockType, get_current_block, get_moscow_now, mark_jingle_played
+from scheduler import BlockType, get_current_block, get_moscow_now, mark_anchor_played, mark_jingle_played
 from services.jingle_block import run_jingle_block
 from services.music_block import _ensure_silence_file, run_music_track
 from services.news_block import run_news_block
@@ -21,33 +21,19 @@ def run_block(block_type: BlockType, arg: str | None) -> None:
         mark_jingle_played()  # всегда, чтобы не зациклиться при отсутствии файла
     elif block_type == BlockType.NEWS:
         run_news_block()
-        while get_current_block()[0] == BlockType.NEWS:
-            _keep_stream_alive()
-            time.sleep(8)  # тишина 8 сек — подкладываем чаще, чтобы эфир не заглох
+        mark_anchor_played()  # до конца часа — MUSIC
     elif block_type == BlockType.WEATHER:
         run_weather_block()
-        while get_current_block()[0] == BlockType.WEATHER:
-            _keep_stream_alive()
-            time.sleep(8)
+        mark_anchor_played()
     elif block_type == BlockType.PODCAST:
         run_podcast_block(arg or "")
-        while get_current_block()[0] == BlockType.PODCAST:
-            _keep_stream_alive()
-            time.sleep(8)
+        mark_anchor_played()
     elif block_type == BlockType.MUSIC:
         # Цикл треков — проверяем расписание перед каждым треком
         while get_current_block()[0] == BlockType.MUSIC:
             if not run_music_track(intro_enabled=True):
                 print("[MUSIC] Не удалось загрузить трек, пауза 30 сек")
                 time.sleep(30)
-
-
-def _keep_stream_alive() -> None:
-    """Пока блок длится — подкладывать тишину, чтобы эфир не заглох. Не блокирует при переполнении."""
-    if start_continuous_stream():
-        silence = _ensure_silence_file()
-        if silence.exists():
-            enqueue_track(None, silence, block=False)
 
 
 def _warmup_stream(block_type: BlockType) -> None:
