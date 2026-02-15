@@ -59,6 +59,11 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transition: opacity 0.35s ease;
+    }
+
+    .video-bg.video-bg-fade-out {
+      opacity: 0;
     }
 
     ::selection {
@@ -395,7 +400,8 @@
 </head>
 <body>
   <div class="video-bg-wrap">
-    <video class="video-bg" src="/background.mp4" muted playsinline loop preload="auto" autoplay></video>
+    <video class="video-bg" id="videoBg1" src="/background.mp4" muted playsinline preload="auto"></video>
+    <video class="video-bg" id="videoBg2" src="/background.mp4" muted playsinline preload="auto" style="opacity:0"></video>
   </div>
   <main class="radio-main">
     <!-- Ambient background glow -->
@@ -694,12 +700,57 @@
       updateVolumeIcon();
     });
 
-    /* ─── Video background: single loop ─── */
+    /* ─── Video background: seamless loop (2 videos, prestart + crossfade) ─── */
     (function() {
-      var v = document.querySelector(".video-bg");
-      if (v) {
-        v.play().catch(function() {});
+      var v1 = document.getElementById("videoBg1");
+      var v2 = document.getElementById("videoBg2");
+      var CROSSFADE = 0.35;
+      var PRESTART = 1.2;
+      var inCrossfade = false;
+      var nextStarted = { v1: false, v2: false };
+
+      function playFromStart(v, retry) {
+        retry = retry || 0;
+        v.currentTime = 0;
+        v.play().catch(function() { if (retry < 3) setTimeout(function() { playFromStart(v, retry + 1); }, 200); });
       }
+
+      function prestart(to) {
+        var k = to.id === "videoBg1" ? "v1" : "v2";
+        if (nextStarted[k]) return;
+        nextStarted[k] = true;
+        to.currentTime = 0;
+        to.style.opacity = "0";
+        to.play().catch(function() {});
+      }
+
+      function crossfade(from, to) {
+        if (inCrossfade) return;
+        inCrossfade = true;
+        nextStarted[from.id === "videoBg1" ? "v1" : "v2"] = false;
+        to.style.opacity = "1";
+        from.classList.add("video-bg-fade-out");
+        setTimeout(function() {
+          from.pause();
+          from.currentTime = 0;
+          from.classList.remove("video-bg-fade-out");
+          inCrossfade = false;
+        }, CROSSFADE * 1000);
+      }
+
+      function tick(v, next) {
+        if (!v.duration || inCrossfade) return;
+        var t = v.currentTime;
+        if (t >= v.duration - PRESTART) prestart(next);
+        if (t >= v.duration - CROSSFADE) crossfade(v, next);
+      }
+
+      v1.addEventListener("timeupdate", function() { tick(v1, v2); });
+      v2.addEventListener("timeupdate", function() { tick(v2, v1); });
+      v1.addEventListener("ended", function() { if (!inCrossfade) crossfade(v1, v2); });
+      v2.addEventListener("ended", function() { if (!inCrossfade) crossfade(v2, v1); });
+
+      playFromStart(v1);
     })();
 
     /* ─── Init ─── */
