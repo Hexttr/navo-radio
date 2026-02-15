@@ -59,11 +59,6 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: opacity 0.5s ease;
-    }
-
-    .video-bg.video-bg-fade-out {
-      opacity: 0;
     }
 
     ::selection {
@@ -400,8 +395,7 @@
 </head>
 <body>
   <div class="video-bg-wrap">
-    <video class="video-bg" id="videoBg1" muted playsinline preload="auto"></video>
-    <video class="video-bg" id="videoBg2" muted playsinline preload="auto" style="opacity:0"></video>
+    <video class="video-bg" src="/background.mp4" muted playsinline loop preload="auto" autoplay></video>
   </div>
   <main class="radio-main">
     <!-- Ambient background glow -->
@@ -700,66 +694,12 @@
       updateVolumeIcon();
     });
 
-    /* ─── Video background: seamless loop with crossfade ─── */
+    /* ─── Video background: single loop ─── */
     (function() {
-      var v1 = document.getElementById("videoBg1");
-      var v2 = document.getElementById("videoBg2");
-      var CROSSFADE = 0.5;
-      var PRESTART = 1.5;  /* start next video this many sec before end */
-      var src = "/background.mp4";
-      var inCrossfade = false;
-      var nextPreStarted = { v1: false, v2: false };
-      v1.src = v2.src = src;
-
-      function startVideo(v, retries) {
-        retries = retries || 0;
-        v.currentTime = 0;
-        var p = v.play();
-        if (p && typeof p.catch === "function") {
-          p.catch(function() {
-            if (retries < 3) setTimeout(function() { startVideo(v, retries + 1); }, 300);
-          });
-        }
+      var v = document.querySelector(".video-bg");
+      if (v) {
+        v.play().catch(function() {});
       }
-
-      function preStartNext(v, next) {
-        var key = v.id === "videoBg1" ? "v1" : "v2";
-        if (nextPreStarted[key]) return;
-        nextPreStarted[key] = true;
-        next.currentTime = 0;
-        next.style.opacity = "0";
-        next.classList.remove("video-bg-fade-out");
-        var p = next.play();
-        if (p && typeof p.catch === "function") p.catch(function() {});
-      }
-
-      function crossfade(from, to) {
-        if (inCrossfade) return;
-        inCrossfade = true;
-        nextPreStarted[from.id === "videoBg1" ? "v1" : "v2"] = false;
-        to.style.opacity = "1";
-        from.classList.add("video-bg-fade-out");
-        setTimeout(function() {
-          from.pause();
-          from.currentTime = 0;
-          from.classList.remove("video-bg-fade-out");
-          inCrossfade = false;
-        }, CROSSFADE * 1000);
-      }
-
-      function checkLoop(v, next) {
-        if (!v.duration || inCrossfade) return;
-        var t = v.currentTime;
-        if (t >= v.duration - PRESTART) preStartNext(v, next);
-        if (t >= v.duration - CROSSFADE) crossfade(v, next);
-      }
-
-      v1.addEventListener("timeupdate", function() { checkLoop(v1, v2); });
-      v2.addEventListener("timeupdate", function() { checkLoop(v2, v1); });
-      v1.addEventListener("ended", function() { if (!inCrossfade) crossfade(v1, v2); });
-      v2.addEventListener("ended", function() { if (!inCrossfade) crossfade(v2, v1); });
-
-      startVideo(v1);
     })();
 
     /* ─── Init ─── */
