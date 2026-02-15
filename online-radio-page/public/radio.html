@@ -42,6 +42,23 @@
       overflow: hidden;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      position: relative;
+    }
+
+    .video-bg {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+    }
+
+    .video-bg-overlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(15, 23, 36, 0.7) 0%, rgba(15, 23, 36, 0.85) 100%);
+      z-index: 1;
     }
 
     ::selection {
@@ -51,6 +68,7 @@
     /* ─── Main Container ─── */
     .radio-main {
       position: relative;
+      z-index: 2;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -395,6 +413,10 @@
   </style>
 </head>
 <body>
+  <video class="video-bg" autoplay muted loop playsinline>
+    <source src="/background.mp4" type="video/mp4" />
+  </video>
+  <div class="video-bg-overlay" aria-hidden="true"></div>
   <main class="radio-main">
     <!-- Ambient background glow -->
     <div class="ambient-glow"></div>
