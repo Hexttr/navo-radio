@@ -188,6 +188,7 @@ Type=simple
 User=root
 WorkingDirectory=/opt/navo-radio/backend
 Environment="PYTHONIOENCODING=utf-8"
+Environment="PYTHONUNBUFFERED=1"
 Environment="PATH=/opt/navo-radio/backend/.venv/bin:/usr/bin:/bin"
 ExecStart=/opt/navo-radio/backend/.venv/bin/python main.py
 Restart=always

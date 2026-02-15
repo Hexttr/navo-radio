@@ -503,7 +503,7 @@
     let analyser = null;
     let source = null;
 
-    const STREAM_URL = "http://localhost:8000/stream";
+    const STREAM_URL = (typeof window !== "undefined" && window.location.origin) ? (window.location.origin + "/stream") : "http://localhost:8000/stream";
 
     /* Прямой эфир — метаданные приходят из стрима (Icecast не передаёт, пока статично) */
     const defaultNowPlaying = "NAVO RADIO — Прямой эфир";
@@ -606,6 +606,8 @@
       function draw() {
         animFrameId = requestAnimationFrame(draw);
         analyser.getByteFrequencyData(dataArray);
+        var sum = 0; for (var i = 0; i < dataArray.length; i++) sum += dataArray[i];
+        if (sum === 0) { for (var j = 0; j < dataArray.length; j++) dataArray[j] = 25 + Math.sin(Date.now()/150 + j*0.08) * 20; }
 
         const dpr = window.devicePixelRatio || 1;
         const rect = canvas.getBoundingClientRect();
@@ -635,7 +637,7 @@
 
           ctx.fillStyle = gradient;
           ctx.beginPath();
-          ctx.roundRect(x, y, barWidth, barHeight, [3, 3, 0, 0]);
+          if (ctx.roundRect) { ctx.roundRect(x, y, barWidth, barHeight, [3, 3, 0, 0]); } else { ctx.rect(x, y, barWidth, barHeight); }
           ctx.fill();
 
           ctx.shadowColor = "hsl(270, 80%, 58%)";
@@ -686,7 +688,7 @@
 
           ctx.fillStyle = gradient;
           ctx.beginPath();
-          ctx.roundRect(x, y, barWidth, barHeight, [3, 3, 0, 0]);
+          if (ctx.roundRect) { ctx.roundRect(x, y, barWidth, barHeight, [3, 3, 0, 0]); } else { ctx.rect(x, y, barWidth, barHeight); }
           ctx.fill();
         }
       }
