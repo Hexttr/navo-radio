@@ -17,6 +17,7 @@ from config import (
 
 # Очередь: (intro_path | None, track_path). Feeder пишет в FFmpeg stdin.
 _stream_queue: queue.Queue[tuple[Path | None, Path] | None] = queue.Queue(maxsize=16)
+_feeder_thread: threading.Thread | None = None
 _ffmpeg_proc: subprocess.Popen | None = None
 _running = False
 
