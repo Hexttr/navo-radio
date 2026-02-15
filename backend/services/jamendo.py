@@ -15,6 +15,19 @@ API_BASE = "https://api.jamendo.com/v3.0/tracks"
 # tajik — таджикские артисты; oriental — восточная; persian — персидская; asia — азиатская
 TAGS = ["tajik", "oriental", "persian", "asia", "world", "folk", "ethnic"]
 
+# История воспроизведённых треков — не повторять последние N
+_RECENTLY_PLAYED: list[str] = []
+_RECENTLY_PLAYED_MAX = 150
+
+
+def mark_track_played(track_id: str) -> None:
+    """Отметить трек как воспроизведённый (исключить из выбора на время)."""
+    global _RECENTLY_PLAYED
+    _RECENTLY_PLAYED = [tid for tid in _RECENTLY_PLAYED if tid != track_id]
+    _RECENTLY_PLAYED.append(track_id)
+    if len(_RECENTLY_PLAYED) > _RECENTLY_PLAYED_MAX:
+        _RECENTLY_PLAYED = _RECENTLY_PLAYED[-_RECENTLY_PLAYED_MAX:]
+
 
 @dataclass
 class Track:
@@ -67,13 +80,38 @@ def fetch_tracks(limit: int = 50, tag: str | None = None) -> list[Track]:
 
 
 def get_next_track() -> Track | None:
-    """Получить случайный трек из пула восточной музыки (приоритет — таджикская, восточная)."""
-    tags_to_try = list(TAGS)
-    random.shuffle(tags_to_try)
-    for tag in tags_to_try:
-        tracks = fetch_tracks(limit=30, tag=tag)
-        if tracks:
-            return random.choice(tracks)
+    """Получить случайный трек из объединённого пула по всем тегам, исключая недавно сыгранные."""
+    global _RECENTLY_PLAYED
+    excluded = set(_RECENTLY_PLAYED)
+    all_tracks: list[Track] = []
+    seen_ids: set[str] = set()
+
+    for tag in TAGS:
+        try:
+            tracks = fetch_tracks(limit=100, tag=tag)
+            for t in tracks:
+                if t.id not in seen_ids and t.id not in excluded:
+                    all_tracks.append(t)
+                    seen_ids.add(t.id)
+        except Exception:
+            continue
+
+    if not all_tracks:
+        # Все треки уже недавно играли — очищаем историю и пробуем снова
+        excluded.clear()
+        _RECENTLY_PLAYED = []
+        for tag in TAGS:
+            try:
+                tracks = fetch_tracks(limit=100, tag=tag)
+                for t in tracks:
+                    if t.id not in seen_ids:
+                        all_tracks.append(t)
+                        seen_ids.add(t.id)
+            except Exception:
+                continue
+
+    if all_tracks:
+        return random.choice(all_tracks)
     return None
 
 

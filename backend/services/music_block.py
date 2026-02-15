@@ -11,7 +11,7 @@ from config import CACHE_DIR
 from config import FFMPEG_PATH
 
 from .groq_client import generate_dj_intro
-from .jamendo import download_track, get_next_track
+from .jamendo import download_track, get_next_track, mark_track_played
 from .streamer import enqueue_track, start_continuous_stream, stream_to_icecast
 from .tts import text_to_speech
 
@@ -125,6 +125,9 @@ def run_music_track(intro_enabled: bool = True) -> bool:
                 return False
 
     intro_path, track_path, display_name = data
+    track_id = track_path.stem.replace("track_", "")
+    mark_track_played(track_id)
+
     safe_name = display_name.encode("ascii", errors="replace").decode("ascii")
     print(f"[MUSIC] {safe_name}")
 
