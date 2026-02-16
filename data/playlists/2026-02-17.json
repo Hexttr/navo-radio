@@ -1,0 +1,69 @@
+{
+  "date": "2026-02-17",
+  "createdAt": "2026-02-16T20:54:44.393584+03:00",
+  "entities": [
+    {
+      "type": "news",
+      "text": "Новости временно недоступны.",
+      "audio": null,
+      "file": null,
+      "duration": 0
+    },
+    {
+      "type": "weather",
+      "text": "Прогноз погоды временно недоступен.",
+      "audio": null,
+      "file": null,
+      "duration": 0
+    },
+    {
+      "type": "news",
+      "text": "Новости временно недоступны.",
+      "audio": null,
+      "file": null,
+      "duration": 0
+    },
+    {
+      "type": "weather",
+      "text": "Прогноз погоды временно недоступен.",
+      "audio": null,
+      "file": null,
+      "duration": 0
+    },
+    {
+      "type": "news",
+      "text": "Новости временно недоступны.",
+      "audio": null,
+      "file": null,
+      "duration": 0
+    },
+    {
+      "type": "weather",
+      "text": "Прогноз погоды временно недоступен.",
+      "audio": null,
+      "file": null,
+      "duration": 0
+    },
+    {
+      "type": "news",
+      "text": "Новости временно недоступны.",
+      "audio": null,
+      "file": null,
+      "duration": 0
+    },
+    {
+      "type": "weather",
+      "text": "Прогноз погоды временно недоступен.",
+      "audio": null,
+      "file": null,
+      "duration": 0
+    },
+    {
+      "type": "news",
+      "text": "Новости временно недоступны.",
+      "audio": null,
+      "file": null,
+      "duration": 0
+    }
+  ]
+}

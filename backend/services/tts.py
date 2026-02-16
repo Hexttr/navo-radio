@@ -5,7 +5,7 @@ Edge TTS по умолчанию, ElevenLabs опционально.
 import asyncio
 from pathlib import Path
 
-from config import CACHE_DIR, ELEVENLABS_API_KEY, TTS_PROVIDER
+from config import CACHE_DIR, ELEVENLABS_API_KEY, TTS_CACHE_DIR, TTS_PROVIDER
 
 # Русский голос Edge TTS (мужской, нейтральный)
 EDGE_VOICE = "ru-RU-DmitryNeural"
@@ -19,13 +19,15 @@ async def _edge_tts(text: str, output_path: Path) -> None:
     await communicate.save(str(output_path))
 
 
-def text_to_speech(text: str, filename: str = "intro.mp3") -> Path:
+def text_to_speech(text: str, filename: str = "intro.mp3", output_dir: Path | None = None) -> Path:
     """
     Озвучить текст, сохранить в кэш.
     Возвращает путь к файлу.
+    output_dir: если задан, сохранять туда (иначе TTS_CACHE_DIR или CACHE_DIR).
     """
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    output_path = CACHE_DIR / filename
+    base = output_dir or TTS_CACHE_DIR
+    base.mkdir(parents=True, exist_ok=True)
+    output_path = base / filename
 
     if TTS_PROVIDER == "elevenlabs" and ELEVENLABS_API_KEY:
         _elevenlabs_tts(text, output_path)

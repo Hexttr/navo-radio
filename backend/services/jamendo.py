@@ -8,7 +8,7 @@ from pathlib import Path
 
 import requests
 
-from config import CACHE_DIR, JAMENDO_CLIENT_ID
+from config import JAMENDO_CLIENT_ID, SONGS_CACHE_DIR
 
 API_BASE = "https://api.jamendo.com/v3.0/tracks"
 # Теги: восточная музыка, приоритет — Таджикистан и Центральная Азия
@@ -117,8 +117,8 @@ def get_next_track() -> Track | None:
 
 def download_track(track: Track) -> Path:
     """Скачать трек в кэш, вернуть путь к файлу."""
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    path = CACHE_DIR / f"track_{track.id}.mp3"
+    SONGS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    path = SONGS_CACHE_DIR / f"track_{track.id}.mp3"
 
     if path.exists():
         return path

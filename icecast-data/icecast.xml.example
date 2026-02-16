@@ -36,7 +36,8 @@
         <logdir>ABSOLUTE_PATH_TO_PROJECT/icecast-data/log</logdir>
         <webroot>C:/Program Files/Icecast/web</webroot>
         <adminroot>C:/Program Files/Icecast/admin</adminroot>
-        <reportxmldb>ABSOLUTE_PATH_TO_PROJECT/icecast-data/report-db.xml</reportxmldb>
+        <!-- reportxmldb может вызывать ошибку "Unknown name <report-db>" в некоторых версиях Icecast — закомментировано -->
+        <!-- <reportxmldb>ABSOLUTE_PATH_TO_PROJECT/icecast-data/report-db.xml</reportxmldb> -->
         <alias source="/" destination="/status.xsl"/>
     </paths>
 

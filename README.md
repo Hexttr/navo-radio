@@ -2,13 +2,14 @@
 
 Онлайн-радио: восточная музыка (Таджикистан), DJ-интро, новости, погода, подкасты.
 
-## Быстрый старт
+## Быстрый старт (новая архитектура с админкой)
 
-1. **Установить**: Python 3.10+, FFmpeg, Icecast
-2. **Скопировать конфиг**: `cp backend/.env.example backend/.env` — заполнить API ключи
-3. **Icecast**: скопировать `icecast-data/icecast.xml.example` → `icecast-data/icecast.xml`, указать пароль и пути
-4. **Запуск**: `start-all.bat` (или вручную: Icecast → `python backend/main.py`)
-5. **Открыть**: `online-radio-page/public/radio.html`
+1. **Установить**: Python 3.10+, FFmpeg, Icecast, Node.js
+2. **Конфиг**: `backend/.env` — заполнить `JAMENDO_CLIENT_ID`, `GROQ_API_KEY`, `ICECAST_PASSWORD`
+3. **Запуск**: `start-all.bat` — Icecast + API + Playback
+4. **Фронтенд** (отдельный терминал): `cd online-radio-page && npm run dev`
+5. **Админка**: http://localhost:3000/admin — сгенерировать эфир на день
+6. **Плеер**: http://localhost:3000 или `radio.html`
 
 ## Структура
 

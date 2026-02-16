@@ -11,11 +11,15 @@ from dotenv import load_dotenv
 _env_path = Path(__file__).resolve().parent / ".env"
 load_dotenv(_env_path)
 
-# Корень проекта (Radio4)
+# Корень проекта
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATA_DIR = PROJECT_ROOT / "data"
+PLAYLISTS_DIR = DATA_DIR / "playlists"
 PODCASTS_DIR = PROJECT_ROOT / "podcasts"
-CACHE_DIR = PROJECT_ROOT / "cache"
 JINGLES_DIR = PROJECT_ROOT / "jingles"
+CACHE_DIR = PROJECT_ROOT / "cache"  # legacy, для совместимости
+SONGS_CACHE_DIR = DATA_DIR / "cache" / "songs"
+TTS_CACHE_DIR = DATA_DIR / "cache" / "tts"
 
 # Аудиозаставка (короткий mp3, раз в час)
 JINGLE_FILE = os.getenv("JINGLE_FILE", "jingle.mp3")

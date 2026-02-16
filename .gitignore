@@ -6,6 +6,7 @@ backend/.env
 
 # Кэш и временные файлы
 cache/
+data/cache/
 
 # Подкасты (пользовательский контент)
 podcasts/*.mp3
